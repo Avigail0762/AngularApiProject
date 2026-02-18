@@ -1,0 +1,14 @@
+<p>lottery</p>
+@for (g of gifts$ | async; track g.id) {
+  <p>{{ g.name }}</p>
+  <button (click)="draw(g.id)"  [disabled]="g.isDrawn">
+   Make a lottery
+  </button>
+}
+<br>
+<button (click)="downloadWinnersReport()">📄 Winners Report</button>
+<button (click)="getTotalIncome()">💰 Revenue</button>
+
+<p *ngIf="totalIncome !== null">
+ Total revenue: {{ totalIncome }} ₪
+</p>

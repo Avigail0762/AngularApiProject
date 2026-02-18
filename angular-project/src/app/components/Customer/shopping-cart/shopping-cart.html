@@ -1,0 +1,39 @@
+<h2>Shopping Cart</h2>
+
+@if ((cart$ | async); as cart) {
+  @if (asItems(cart).length === 0) {
+    <p>Your cart is empty.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of asItems(cart); track item.id) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.price | currency:'USD' }}</td>
+            <td>
+              <!-- <button (click)="decreaseQuantity(item.id)">-</button> -->
+              {{ item.quantity }}
+              <!-- <button (click)="increaseQuantity(item.id)">+</button> -->
+            </td>
+            <td><button (click)="remove(item.id)">Remove</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="cart-actions">
+      <div class="total">Total: {{ calcTotal(cart) | currency:'USD' }}</div>
+      <button class="purchase" (click)="purchase()">Purchase</button>
+    </div>
+  }
+} @else {
+  <p>Loading cart…</p>
+}

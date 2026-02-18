@@ -1,0 +1,81 @@
+.gifts-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 1.75rem;
+	margin-top: 1.25rem;
+}
+
+.gift-card {
+	background: #ffffff;
+	border-radius: 20px;
+	box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.gift-image-wrapper {
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+}
+
+.gift-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gift-content {
+	padding: 1rem 1.25rem 1.25rem;
+}
+
+.gift-name {
+	margin: 0 0 0.5rem;
+	font-size: 1.1rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.gift-description {
+	margin: 0.35rem 0;
+}
+
+.gift-price,
+.gift-buyers,
+.gift-category,
+.gift-winner,
+.gift-status {
+	margin: 0.15rem 0;
+	font-size: 0.9rem;
+}
+
+.gift-buttons {
+	margin-top: 0.9rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.gifts-actions {
+	display: flex;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+// Purple for second button (Update / secondary action)
+.gift-buttons button:nth-child(2) {
+	background-color: #a855f7;
+}
+.gift-buttons button:nth-child(2):hover:not(:disabled) {
+	background-color: #9333ea;
+}
+
+// Orange for third button (View Tickets / tertiary action)
+.gift-buttons button:nth-child(3) {
+	background-color: #fb923c;
+}
+.gift-buttons button:nth-child(3):hover:not(:disabled) {
+	background-color: #ea7010;
+}

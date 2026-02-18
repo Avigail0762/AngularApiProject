@@ -1,0 +1,73 @@
+<div>
+  <h2>Update Gift</h2>
+
+  <form [formGroup]="giftForm">
+
+    <div class="form-group">
+      <div class="form-label">Name</div>
+      <div>
+        <input type="text" class="form-control" formControlName="name" />
+        <div
+          class="text-danger"
+          *ngIf="giftForm.controls['name'].touched &&
+                 giftForm.controls['name'].errors &&
+                 giftForm.controls['name'].errors['required']">
+          Name is required
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Price</div>
+      <div>
+        <input type="number" class="form-control" formControlName="price" />
+        <div
+          class="text-danger"
+          *ngIf="giftForm.controls['price'].errors &&
+                 giftForm.controls['price'].errors['min']">
+          Price must be at least 10
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Description</div>
+      <div>
+        <input type="text" class="form-control" formControlName="description" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Donor ID</div>
+      <div>
+        <input type="number" class="form-control" formControlName="donorId" />
+        <div
+          class="text-danger"
+          *ngIf="giftForm.controls['donorId'].errors &&
+                 giftForm.controls['donorId'].errors['min']">
+          Donor ID must be at least 1
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Category</div>
+      <div>
+        <input type="text" class="form-control" formControlName="category" />
+      </div>
+    </div>
+
+    <div class="col">
+      <button
+        type="button"
+        (click)="updateGift()"
+        [disabled]="giftForm.invalid">
+        Save
+      </button>
+    </div>
+            <div class="col">
+            <button type="button"  (click)="cancel()">cancel</button>
+        </div>
+
+  </form>
+</div>

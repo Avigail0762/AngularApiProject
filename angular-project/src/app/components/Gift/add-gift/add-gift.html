@@ -1,0 +1,60 @@
+<div>
+    <h2>Add a New Gift</h2>
+    <form [formGroup]="giftForm">
+        <div class="form-group">
+            <div class="form-label">Name</div>
+            <div>
+                <input type="text" class="form-control" formControlName="name" />
+                <div class="text-danger" *ngIf="giftForm.controls['name'].touched
+                 && giftForm.controls['name'].errors 
+                 && giftForm.controls['name'].errors['required']">Name is required</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label">Price</div>
+            <div>
+                <input type="number" class="form-control" formControlName="price" />
+                <div class="text-danger" *ngIf="giftForm.controls['price'].errors 
+                && giftForm.controls['price'].errors['min']">Price must be at least 10</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label">Description</div>
+            <div>
+                <input type="text" class="form-control" formControlName="description" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="form-label">Donor</div>
+            <div>
+                <select class="form-control" formControlName="donorId">
+                    <option [ngValue]="0" disabled>Select a donor</option>
+                    <option *ngFor="let d of (donors$ | async) ?? []" [ngValue]="d.id">
+                        {{ d.firstName }} {{ d.lastName }} ({{ d.email }})
+                    </option>
+                </select>
+                <div class="text-danger" *ngIf="giftForm.controls['donorId'].touched && giftForm.controls['donorId'].errors">
+                    <span *ngIf="giftForm.controls['donorId'].errors['min']">Please select a donor</span>
+                    <span *ngIf="giftForm.controls['donorId'].errors['required']">Donor is required</span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="form-label">Category</div>
+            <div>
+                <input type="text" class="form-control" formControlName="category" />
+            </div>
+        </div>
+
+        <div class="col">
+            <button type="button"  (click)="addGift()" [disabled]="giftForm.invalid">save</button>
+        </div>
+        <div class="col">
+            <button type="button"  (click)="cancel()">cancel</button>
+        </div>
+
+    </form>
+</div>

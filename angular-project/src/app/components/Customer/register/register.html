@@ -1,0 +1,58 @@
+<div>
+	<h2>Register</h2>
+	<form [formGroup]="registerForm">
+		<div class="form-group">
+			<div class="form-label">Username</div>
+			<div>
+				<input type="text" class="form-control" formControlName="username" />
+				<div class="text-danger" *ngIf="registerForm.controls['username'].touched
+					&& registerForm.controls['username'].errors
+					&& registerForm.controls['username'].errors['required']">Username is required</div>
+				<div class="text-danger" *ngIf="registerForm.controls['username'].errors
+					&& registerForm.controls['username'].errors['minlength']">Username must be at least 3 characters</div>
+				<div class="text-danger" *ngIf="registerForm.controls['username'].errors
+					&& registerForm.controls['username'].errors['maxlength']">Username cannot exceed 30 characters</div>
+				<div class="text-danger" *ngIf="registerForm.controls['username'].errors
+					&& registerForm.controls['username'].errors['pattern']">Username can contain letters, numbers, and underscores only</div>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="form-label">Phone</div>
+			<div>
+				<input type="tel" class="form-control" formControlName="phone" />
+				<div class="text-danger" *ngIf="registerForm.controls['phone'].errors
+					&& registerForm.controls['phone'].errors['pattern']">Phone must be 7–15 digits</div>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="form-label">Email</div>
+			<div>
+				<input type="email" class="form-control" formControlName="email" />
+				<div class="text-danger" *ngIf="registerForm.controls['email'].touched
+					&& registerForm.controls['email'].errors
+					&& registerForm.controls['email'].errors['required']">Email is required</div>
+				<div class="text-danger" *ngIf="registerForm.controls['email'].errors
+					&& registerForm.controls['email'].errors['email']">Enter a valid email address</div>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="form-label">Password</div>
+			<div>
+				<input type="password" class="form-control" formControlName="password" />
+				<div class="text-danger" *ngIf="registerForm.controls['password'].touched
+					&& registerForm.controls['password'].errors
+					&& registerForm.controls['password'].errors['required']">Password is required</div>
+				<div class="text-danger" *ngIf="registerForm.controls['password'].errors
+					&& registerForm.controls['password'].errors['minlength']">Password must be at least 8 characters</div>
+			</div>
+		</div>
+
+		<div class="col">
+			<button type="button" (click)="register()" [disabled]="registerForm.invalid || loading">Register</button>
+			<a routerLink="/login" style="margin-left:8px;">Already have an account? Login</a>
+		</div>
+	</form>
+</div>

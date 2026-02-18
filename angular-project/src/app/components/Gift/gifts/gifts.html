@@ -1,0 +1,42 @@
+<h2>Gifts</h2>
+
+@if(this.isManager){
+    <div class="gifts-actions">
+        <button (click)="addGift()">Add Gift</button>
+        <button (click)="getGiftsByPrice()">Filter by price</button>
+    </div>
+}
+
+<div class="gifts-grid">
+    @for(g of gifts$ | async; track g.id){
+        <div class="gift-card">
+            <div class="gift-image-wrapper">
+                <img class="gift-image" [src]="'/imgs/' + g.name + '.jpg'" [alt]="g.name" />
+            </div>
+            <div class="gift-content">
+                <h3 class="gift-name">{{ g.name }}</h3>
+                <p class="gift-donor" *ngIf="g.donor">
+                    Donor: {{ g.donor?.firstName }} {{ g.donor?.lastName }}
+                </p>
+                <p class="gift-description" *ngIf="g.description">{{ g.description }}</p>
+                <p class="gift-price">Price: {{ g.price }} ₪</p>
+                <p class="gift-buyers">Buyers: {{ g.buyersNumber }}</p>
+                <p class="gift-category" *ngIf="g.category">Category: {{ g.category }}</p>
+                <p class="gift-winner" *ngIf="g.winnerTicketId">Winner Ticket: {{ g.winnerTicketId }}</p>
+                <p class="gift-status">Status: {{ g.isDrawn ? 'Drawn' : 'Not drawn yet' }}</p>
+
+                <div class="gift-buttons">
+                    @if(this.isManager){
+                        <button (click)="delete(g.id)" [disabled]="g.buyersNumber > 0">Delete</button>
+                        <button (click)="updateGift(g.id)" [disabled]="g.buyersNumber > 0">Update</button>
+                        <button (click)="viewTickets(g.id)">View Tickets</button>
+                    }
+                    @if(!this.isManager){
+                        <button (click)="addToCart(g.id)" [disabled]="g.isDrawn">Add To Cart</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

@@ -1,0 +1,8 @@
+.filter-box {
+  display: flex;
+  flex-direction: column;  // אחד מתחת לשני
+  gap: 8px;                // רווח ביניהם
+}
+.small-input {
+  width: 500px;            // רוחב קבוע
+}

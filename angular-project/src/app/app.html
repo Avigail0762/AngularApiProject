@@ -1,0 +1,32 @@
+<!-- 
+<app-auth> </app-auth>
+<app-gifts></app-gifts>
+<app-add-gift></app-add-gift>
+<app-update-gift></app-update-gift>
+<app-donors></app-donors>
+<app-add-donor></app-add-donor>
+<app-lottery></app-lottery> -->
+<!-- <app-auth> </app-auth> -->
+
+@if(Role == 'manager'){
+    <h2> Welcome Manager </h2>
+    <a routerLink="gifts"> Gifts </a>
+    <a routerLink="donors"> Donors </a>
+    <a routerLink="lottery"> Lottery </a>
+    <button (click)="logOut()"> Log out </button> 
+}
+
+@else if(Role == 'user'){
+    <h2> Welcome User </h2>
+    <a routerLink="gifts"> Gifts </a>
+    <a routerLink="cart"> Shopping Cart </a>
+    <button (click)="logOut()"> Log out </button>
+}   
+
+@else if(Role == 'userWithoutToken'){
+    <h2> Welcome Guest </h2>
+    <a routerLink="login"> Login </a>
+    <a routerLink="register"> Register </a>
+}
+
+<router-outlet />

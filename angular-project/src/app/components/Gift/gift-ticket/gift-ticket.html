@@ -1,0 +1,28 @@
+<h2>Tickets By Gift</h2>
+
+@if (!giftId || giftId <= 0) {
+  <p>Missing or invalid gift id.</p>
+} @else if (tickets$ | async; as tickets) {
+  <p class="subtitle">Gift ID: {{ giftId }}</p>
+
+  @if (tickets.length === 0) {
+    <p>No tickets found for this gift.</p>
+  } @else {
+    <div class="card-grid">
+      @for (t of tickets; track t.id) {
+        <article class="card">
+          <div class="card-header">
+            <div class="ticket-id">Ticket #{{ t.ticketNumberForGift }}</div>
+            <div class="qty">Qty: {{ t.quantity }}</div>
+          </div>
+          <div class="card-body">
+            <div>User ID: {{ t.userId }}</div>
+            <div>Purchased: {{ t.purchasedAt | date:'medium' }}</div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+} @else {
+  <p>Loading tickets...</p>
+}

@@ -1,0 +1,12 @@
+<p>auth works!</p>
+
+<form>
+  <label for="username">Username:</label>
+  <input id="username" name="username" type="text" [(ngModel)]="username" />
+  
+  <label for="password">Password:</label>
+  <input id="password" name="password" type="password" [(ngModel)]="password" />
+  
+  <button (click)="login(username, password)">Login</button>
+
+</form>

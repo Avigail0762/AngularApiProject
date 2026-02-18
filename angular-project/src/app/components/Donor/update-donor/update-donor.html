@@ -1,0 +1,61 @@
+<div>
+  <h2>Update Donor</h2>
+
+  <form [formGroup]="donorForm">
+
+    <div class="form-group">
+      <div class="form-label">First Name</div>
+      <input type="text" class="form-control" formControlName="firstName" />
+      <div class="text-danger"
+           *ngIf="donorForm.controls['firstName'].touched &&
+                  donorForm.controls['firstName'].errors?.['required']">
+        First name is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Last Name</div>
+      <input type="text" class="form-control" formControlName="lastName" />
+      <div class="text-danger"
+           *ngIf="donorForm.controls['lastName'].touched &&
+                  donorForm.controls['lastName'].errors?.['required']">
+        Last name is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Phone Number</div>
+      <input type="text" class="form-control" formControlName="phoneNumber" />
+      <div class="text-danger"
+           *ngIf="donorForm.controls['phoneNumber'].errors?.['minlength']">
+        Phone must be at least 10 digits
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Email</div>
+      <input type="email" class="form-control" formControlName="email" />
+      <div class="text-danger"
+           *ngIf="donorForm.controls['email'].errors?.['email']">
+        Invalid email
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Address</div>
+      <input type="text" class="form-control" formControlName="address" />
+    </div>
+
+    <div class="col">
+      <button type="button"
+              (click)="updateDonor()"
+              [disabled]="donorForm.invalid">
+        Save
+      </button>
+    </div>
+            <div class="col">
+            <button type="button"  (click)="cancel()">cancel</button>
+        </div>
+
+  </form>
+</div>
