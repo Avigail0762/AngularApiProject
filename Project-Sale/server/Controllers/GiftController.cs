@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
 using server.Bll.Interfaces;
 using server.Models;
 using server.Models.DTO;
-
 
 namespace server.Controllers
 {
@@ -14,11 +15,13 @@ namespace server.Controllers
     {
         private readonly IGiftService giftService;
         private readonly ILogger<GiftController> logger;
+        private readonly IDistributedCache _cache;
 
-        public GiftController(IGiftService giftService, ILogger<GiftController> logger)
+        public GiftController(IGiftService giftService, ILogger<GiftController> logger, IDistributedCache cache)
         {
             this.giftService = giftService;
             this.logger = logger;
+            this._cache = cache;
         }
 
         // GET: api/gift
@@ -27,7 +30,18 @@ namespace server.Controllers
         public async Task<ActionResult<List<Gift>>> Get()
         {
             logger.LogInformation("Get all gifts started");
+            string cacheKey = "giftsList";
 
+            // 1. ניסיון שליפה מה-Redis
+            var cachedData = await _cache.GetStringAsync(cacheKey);
+            if (!string.IsNullOrEmpty(cachedData))
+            {
+                logger.LogInformation("Gifts retrieved from Cache (Redis)");
+                var giftsFromCache = JsonSerializer.Deserialize<List<Gift>>(cachedData);
+                return Ok(giftsFromCache);
+            }
+
+            // 2. שליפה מה-Database במידה ואין ב-Cache
             var gifts = await giftService.Get();
 
             if (gifts == null || gifts.Count == 0)
@@ -35,6 +49,14 @@ namespace server.Controllers
                 logger.LogWarning("No gifts found");
                 return NoContent();
             }
+
+            // 3. שמירה ב-Redis ל-5 דקות (לפי התרגיל)
+            var options = new DistributedCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
+
+            var serializedData = JsonSerializer.Serialize(gifts);
+            await _cache.SetStringAsync(cacheKey, serializedData, options);
+
             logger.LogInformation("Get all gifts finished. Count={Count}", gifts.Count);
             return Ok(gifts);
         }
@@ -160,15 +182,13 @@ namespace server.Controllers
             }
             try
             {
-                logger.LogDebug("Calling GiftService.Add");
-
                 var newGift = await giftService.Add(gift);
+                
+                // מחיקת ה-Cache כדי שהרשימה החדשה תתעדכן
+                await _cache.RemoveAsync("giftsList");
+
                 logger.LogInformation("Gift added successfully. Id={Id}", newGift.Id);
-                return CreatedAtAction(
-                    nameof(GetById),
-                    new { id = newGift.Id },
-                    newGift
-                );
+                return CreatedAtAction(nameof(GetById), new { id = newGift.Id }, newGift);
             }
             catch (Exception ex)
             {
@@ -192,6 +212,10 @@ namespace server.Controllers
             try
             {
                 await giftService.Update(id, gift);
+                
+                // מחיקת ה-Cache בגלל עדכון נתונים
+                await _cache.RemoveAsync("giftsList");
+
                 logger.LogInformation("Gift updated successfully. Id={Id}", id);
                 return Ok();
             }
@@ -221,9 +245,13 @@ namespace server.Controllers
                 return NotFound($"Gift with id {id} not found");
             }
 
+            // מחיקת ה-Cache בגלל מחיקת נתונים
+            await _cache.RemoveAsync("giftsList");
+
             logger.LogInformation("Gift removed successfully. Id={Id}", id);
             return Ok();
         }
+
         // GET: api/gift/sorted?ascending=true
         [HttpGet("sorted")]
         [AllowAnonymous]
@@ -241,6 +269,5 @@ namespace server.Controllers
             logger.LogInformation("Get gifts sorted by price finished. Count={Count}", gifts.Count);
             return Ok(gifts);
         }
-
     }
 }

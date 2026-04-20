@@ -1,32 +1,25 @@
 {
   "format": 1,
   "restore": {
-    "M:\\project angular+webapi\\Project-Sale\\server\\server.csproj": {}
+    "F:\\פרויקט תשפו\\AngularApiProject\\Project-Sale\\server\\server.csproj": {}
   },
   "projects": {
-    "M:\\project angular+webapi\\Project-Sale\\server\\server.csproj": {
+    "F:\\פרויקט תשפו\\AngularApiProject\\Project-Sale\\server\\server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "M:\\project angular+webapi\\Project-Sale\\server\\server.csproj",
+        "projectUniqueName": "F:\\פרויקט תשפו\\AngularApiProject\\Project-Sale\\server\\server.csproj",
         "projectName": "server",
-        "projectPath": "M:\\project angular+webapi\\Project-Sale\\server\\server.csproj",
-        "packagesPath": "C:\\Users\\329108245\\.nuget\\packages\\",
-        "outputPath": "M:\\project angular+webapi\\Project-Sale\\server\\obj\\",
+        "projectPath": "F:\\פרויקט תשפו\\AngularApiProject\\Project-Sale\\server\\server.csproj",
+        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+        "outputPath": "F:\\פרויקט תשפו\\AngularApiProject\\Project-Sale\\server\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\329108245\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -44,8 +37,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.300"
+        }
       },
       "frameworks": {
         "net8.0": {
@@ -81,6 +73,10 @@
               "target": "Package",
               "version": "[8.0.22, )"
             },
+            "Microsoft.Extensions.Caching.StackExchangeRedis": {
+              "target": "Package",
+              "version": "[10.0.6, )"
+            },
             "Microsoft.VisualStudio.Azure.Containers.Tools.Targets": {
               "target": "Package",
               "version": "[1.22.1, )"
@@ -109,7 +105,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

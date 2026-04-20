@@ -90,12 +90,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngularApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:4200", "https://localhost:7253") // äëúåáú ùì äàðâåìø ùìê
-                  .AllowAnyHeader()                   // çùåá îàåã ëãé ìàôùø ùìéçú èå÷ï áäîùê
-                  .AllowAnyMethod();                  // îàôùø GET, POST åëå'
+            policy.WithOrigins("http://localhost:4200", "https://localhost:7253") // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+                  .AllowAnyHeader()                   // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
+                  .AllowAnyMethod();                  // ï¿½ï¿½ï¿½ï¿½ï¿½ GET, POST ï¿½ï¿½ï¿½'
         });
 });
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "MyStore_";
+});
 
 var app = builder.Build();
 
