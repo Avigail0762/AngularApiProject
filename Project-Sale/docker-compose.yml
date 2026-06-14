@@ -1,27 +1,27 @@
 services:
-  # שירות ה-API שלך
   api:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - db
-      - [cite_start]redis # הוספת תלות ב-Redis [cite: 19]
+      - redis
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=MyDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
-      - [cite_start]Redis_ConnectionString=redis:6379 # משתנה הסביבה לחיבור ל-Redis [cite: 20]
+      - ConnectionStrings__DefaultConnection=Server=db;Database=SaleDb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True
+      - ConnectionStrings__Redis=redis:6379
+      - Jwt__Key=SuperSecretKeyForSaleApp1234567890!!
+      - Jwt__Issuer=SaleApp
+      - Jwt__Audience=SaleAppUsers
     ports:
-      - "8080:8080"
+      - "8081:8080"
 
-  # שירות מסד הנתונים SQL
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStrongPassword123!
 
-  # שירות ה-Redis החדש [cite: 16]
   redis:
-    [cite_start]image: redis:7-alpine # הגרסה שהתבקשת להוסיף [cite: 16]
+    image: redis:7-alpine
     ports:
-      - [cite_start]"6379:6379" # חשיפת הפורט של Redis [cite: 17]
+      - "6379:6379"
