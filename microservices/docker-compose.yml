@@ -6,6 +6,7 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
+      - SEQ_URL=http://seq:5341
       - Jwt__Key=SuperSecretKeyForSaleApp1234567890!!
       - Jwt__Issuer=SaleApp
       - Jwt__Audience=SaleAppUsers
@@ -15,6 +16,12 @@ services:
       - notification-service
       - product-catalog-service
       - bff-service
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -23,6 +30,7 @@ services:
     build: ./OrderService
     environment:
       - ASPNETCORE_URLS=http://+:8080
+      - SEQ_URL=http://seq:5341
       - ConnectionStrings__DefaultConnection=Server=mssql;Database=orderdb;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True;
       - Jwt__Key=SuperSecretKeyForSaleApp1234567890!!
       - Jwt__Issuer=SaleApp
@@ -41,6 +49,12 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -49,6 +63,7 @@ services:
     build: ./ProductCatalogService
     environment:
       - PORT=8081
+      - SEQ_URL=http://seq:5341
       - MONGO_URI=mongodb://mongodb-catalog:27017/catalogdb
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -71,6 +86,12 @@ services:
       - mongodb-catalog
       - rabbitmq
       - redis
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -79,6 +100,7 @@ services:
     build: ./InventoryService
     environment:
       - PORT=8083
+      - SEQ_URL=http://seq:5341
       - MONGO_URI=mongodb://mongodb-inventory:27017/inventorydb
       - JWT_SECRET=SuperSecretKeyForSaleApp1234567890!!
       - JWT_ISSUER=SaleApp
@@ -96,6 +118,12 @@ services:
     depends_on:
       - mongodb-inventory
       - rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -104,6 +132,7 @@ services:
     build: ./NotificationService
     environment:
       - PORT=8084
+      - SEQ_URL=http://seq:5341
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
       - SMTP_USER=${SMTP_USER:-}
@@ -119,6 +148,12 @@ services:
       - RABBITMQ_EXCHANGE=order.events
     depends_on:
       - rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -126,6 +161,7 @@ services:
     build: ./BffService
     environment:
       - PORT=8090
+      - SEQ_URL=http://seq:5341
       - ORDER_URL=http://order-service:8080
       - CATALOG_URL=http://product-catalog-service:8081
       - JWT_SECRET=SuperSecretKeyForSaleApp1234567890!!
@@ -134,6 +170,12 @@ services:
     depends_on:
       - order-service
       - product-catalog-service
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8090/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
     networks:
       - sale-network
 
@@ -202,12 +244,24 @@ services:
     networks:
       - sale-network
 
+  seq:
+    image: datalust/seq:latest
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - "5341:5341"
+    volumes:
+      - seq_data:/data
+    networks:
+      - sale-network
+
 volumes:
   mssql_data:
   mongodb_catalog_data:
   mongodb_inventory_data:
   rabbitmq_data:
   redis_data:
+  seq_data:
 
 networks:
   sale-network:

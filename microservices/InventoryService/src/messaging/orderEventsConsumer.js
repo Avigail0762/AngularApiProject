@@ -1,5 +1,6 @@
 const amqp = require('amqplib');
 const ticketService = require('../services/ticketService');
+const { logger, withCorrelationId } = require('../logger');
 
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'order.events';
 const ORDER_PLACED_QUEUE = process.env.RABBITMQ_INVENTORY_ORDER_QUEUE || 'inventory.order-placed';
@@ -32,8 +33,11 @@ async function startOrderEventsConsumer() {
 
   channel.consume(ORDER_PLACED_QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
 
       const activeReservations = await ticketService.countActiveReservationsByGiftId(payload.giftId);
       if (activeReservations >= MAX_RESERVATIONS_PER_GIFT) {
@@ -48,7 +52,8 @@ async function startOrderEventsConsumer() {
           giftId: payload.giftId,
           userId: payload.userId,
           reason: `Reservation capacity reached for gift ${payload.giftId}`
-        });
+        }, correlationId);
+        messageLogger.warn('Rejected inventory reservation', { giftId: payload.giftId, ticketId: payload.ticketId });
         channel.ack(msg);
         return;
       }
@@ -75,53 +80,87 @@ async function startOrderEventsConsumer() {
         ticketId: payload.ticketId,
         giftId: payload.giftId,
         userId: payload.userId
-      });
+      }, correlationId);
+
+      messageLogger.info('Reserved inventory ticket', { giftId: payload.giftId, ticketId: payload.ticketId });
 
       channel.ack(msg);
     } catch (err) {
-      console.error('Inventory consumer order-placed error:', err.message);
+      messageLogger.error('Inventory consumer order-placed error', { error: err });
       channel.nack(msg, false, true);
     }
   });
 
   channel.consume(GIFT_QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
       await ticketService.registerTicket({
         ticketId: payload.ticketId,
         giftId: payload.giftId,
         userId: payload.userId,
+        correlationId: payload.correlationId,
         ticketNumberForGift: payload.ticketNumberForGift,
         quantity: payload.quantity,
         purchasedAt: payload.purchasedAt
       });
+      messageLogger.info('Registered gift-purchased ticket', { giftId: payload.giftId, ticketId: payload.ticketId });
       channel.ack(msg);
     } catch (err) {
-      console.error('Inventory consumer gift-purchased error:', err.message);
+      messageLogger.error('Inventory consumer gift-purchased error', { error: err });
       channel.nack(msg, false, true);
     }
   });
 
   channel.consume(FAIL_QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
       await ticketService.removeTicketByTicketId(payload.ticketId);
+      messageLogger.info('Removed ticket after purchase failure', { giftId: payload.giftId, ticketId: payload.ticketId });
       channel.ack(msg);
     } catch (err) {
-      console.error('Inventory consumer purchase-failed error:', err.message);
+      messageLogger.error('Inventory consumer purchase-failed error', { error: err });
       channel.nack(msg, false, true);
     }
   });
 
-  console.log('InventoryService RabbitMQ consumers started');
+  logger.info('InventoryService RabbitMQ consumers started');
   return { connection, channel };
 }
 
-function publish(channel, routingKey, payload) {
+function publish(channel, routingKey, payload, correlationId) {
   const body = Buffer.from(JSON.stringify(payload));
-  channel.publish(EXCHANGE, routingKey, body, { persistent: true });
+  channel.publish(EXCHANGE, routingKey, body, {
+    persistent: true,
+    correlationId,
+    headers: {
+      CorrelationId: correlationId
+    }
+  });
+}
+
+function extractCorrelationId(msg) {
+  const headerValue = msg.properties?.headers?.CorrelationId;
+  if (msg.properties?.correlationId) {
+    return msg.properties.correlationId;
+  }
+
+  if (Buffer.isBuffer(headerValue)) {
+    return headerValue.toString('utf8');
+  }
+
+  if (typeof headerValue === 'string' && headerValue.trim()) {
+    return headerValue;
+  }
+
+  return randomId();
 }
 
 function randomId() {

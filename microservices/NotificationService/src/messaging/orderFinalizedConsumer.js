@@ -1,6 +1,7 @@
 const amqp = require('amqplib');
 const axios = require('axios');
 const emailService = require('../services/emailService');
+const { logger, withCorrelationId } = require('../logger');
 
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'order.events';
 const QUEUE = process.env.RABBITMQ_NOTIFICATION_QUEUE || 'notification.order-finalized';
@@ -28,8 +29,11 @@ async function startOrderFinalizedConsumer() {
 
   channel.consume(QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
       const userRes = await axios.get(
         `${ORDER_URL()}/api/user/${payload.userId}`,
         { headers: INTERNAL_HEADERS() }
@@ -40,16 +44,39 @@ async function startOrderFinalizedConsumer() {
         await emailService.sendOrderFinalStateEmail(toEmail, payload.status, payload.reason || '');
       }
 
+      messageLogger.info('Processed order-finalized event', {
+        userId: payload.userId,
+        ticketId: payload.ticketId,
+        status: payload.status
+      });
+
       channel.ack(msg);
     } catch (err) {
-      console.error('Notification consumer order-finalized error:', err.message);
+      messageLogger.error('Notification consumer order-finalized error', { error: err });
       // Do not block saga completion because of email issues.
       channel.ack(msg);
     }
   });
 
-  console.log('NotificationService RabbitMQ consumers started');
+  logger.info('NotificationService RabbitMQ consumers started');
   return { connection, channel };
+}
+
+function extractCorrelationId(msg) {
+  const headerValue = msg.properties?.headers?.CorrelationId;
+  if (msg.properties?.correlationId) {
+    return msg.properties.correlationId;
+  }
+
+  if (Buffer.isBuffer(headerValue)) {
+    return headerValue.toString('utf8');
+  }
+
+  if (typeof headerValue === 'string' && headerValue.trim()) {
+    return headerValue;
+  }
+
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 module.exports = { startOrderFinalizedConsumer };

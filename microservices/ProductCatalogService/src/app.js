@@ -3,9 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const { startOrderEventsConsumer } = require('./messaging/orderEventsConsumer');
 const { connectRedis } = require('./cache/redisClient');
+const { logger, requestLogger } = require('./logger');
 
 const app = express();
 app.use(express.json());
+app.use(requestLogger);
 
 app.use((_, res, next) => {
   res.setHeader('X-Container-Id', process.env.HOSTNAME || 'unknown');
@@ -22,13 +24,13 @@ app.get('/health', (_, res) => res.json({ status: 'ok', service: 'ProductCatalog
 // ── MongoDB connection ─────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log('Connected to MongoDB (catalogdb)');
+    logger.info('Connected to MongoDB', { database: 'catalogdb' });
     await connectRedis();
     await startOrderEventsConsumer();
     const PORT = process.env.PORT || 8081;
-    app.listen(PORT, () => console.log(`ProductCatalogService running on port ${PORT}`));
+    app.listen(PORT, () => logger.info('ProductCatalogService started', { port: PORT }));
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err);
+    logger.error('MongoDB connection error', { error: err });
     process.exit(1);
   });

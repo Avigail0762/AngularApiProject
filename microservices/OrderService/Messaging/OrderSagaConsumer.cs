@@ -5,6 +5,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using OrderService.Messaging.Contracts;
 using OrderService.Repositories.Interfaces;
+using Serilog.Context;
 
 namespace OrderService.Messaging
 {
@@ -64,30 +65,62 @@ namespace OrderService.Messaging
         {
             if (_channel == null) return;
 
+            var correlationId = ExtractCorrelationId(args.BasicProperties);
             try
             {
-                var body = Encoding.UTF8.GetString(args.Body.ToArray());
-
-                if (args.RoutingKey == "order.events.inventory-reserved")
+                using (LogContext.PushProperty("CorrelationId", correlationId))
                 {
-                    var payload = JsonSerializer.Deserialize<InventoryReservedEvent>(body)
-                        ?? throw new InvalidOperationException("Invalid inventory-reserved payload");
-                    await ConfirmOrderAsync(payload);
-                }
-                else if (args.RoutingKey == "order.events.inventory-rejected")
-                {
-                    var payload = JsonSerializer.Deserialize<InventoryRejectedEvent>(body)
-                        ?? throw new InvalidOperationException("Invalid inventory-rejected payload");
-                    await CompensateOrderAsync(payload);
-                }
+                    var body = Encoding.UTF8.GetString(args.Body.ToArray());
 
-                _channel.BasicAck(args.DeliveryTag, multiple: false);
+                    if (args.RoutingKey == "order.events.inventory-reserved")
+                    {
+                        var payload = JsonSerializer.Deserialize<InventoryReservedEvent>(body)
+                            ?? throw new InvalidOperationException("Invalid inventory-reserved payload");
+                        payload.CorrelationId = correlationId;
+                        await ConfirmOrderAsync(payload);
+                    }
+                    else if (args.RoutingKey == "order.events.inventory-rejected")
+                    {
+                        var payload = JsonSerializer.Deserialize<InventoryRejectedEvent>(body)
+                            ?? throw new InvalidOperationException("Invalid inventory-rejected payload");
+                        payload.CorrelationId = correlationId;
+                        await CompensateOrderAsync(payload);
+                    }
+
+                    _channel.BasicAck(args.DeliveryTag, multiple: false);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "OrderSagaConsumer failed handling {RoutingKey}", args.RoutingKey);
+                using (LogContext.PushProperty("CorrelationId", correlationId))
+                {
+                    _logger.LogError(ex, "OrderSagaConsumer failed handling {RoutingKey}", args.RoutingKey);
+                }
                 _channel.BasicNack(args.DeliveryTag, multiple: false, requeue: true);
             }
+        }
+
+        private static string ExtractCorrelationId(IBasicProperties properties)
+        {
+            if (!string.IsNullOrWhiteSpace(properties.CorrelationId))
+            {
+                return properties.CorrelationId;
+            }
+
+            if (properties.Headers != null && properties.Headers.TryGetValue("CorrelationId", out var headerValue))
+            {
+                if (headerValue is byte[] bytes)
+                {
+                    return Encoding.UTF8.GetString(bytes);
+                }
+
+                if (headerValue is string value && !string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return Guid.NewGuid().ToString("N");
         }
 
         private async Task ConfirmOrderAsync(InventoryReservedEvent payload)

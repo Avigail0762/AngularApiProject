@@ -1,8 +1,10 @@
 require('dotenv').config();
 const express = require('express');
+const { logger, requestLogger } = require('./logger');
 
 const app = express();
 app.use(express.json());
+app.use(requestLogger);
 
 app.use('/api/bff', require('./routes/webRoutes'));
 
@@ -12,5 +14,5 @@ app.get('/health', (_, res) => {
 
 const PORT = process.env.PORT || 8090;
 app.listen(PORT, () => {
-  console.log(`BffService running on port ${PORT}`);
+  logger.info('BffService started', { port: PORT });
 });

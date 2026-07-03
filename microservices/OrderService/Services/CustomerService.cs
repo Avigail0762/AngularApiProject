@@ -134,9 +134,9 @@ namespace OrderService.Services
                 throw new Exception("Shopping cart is empty");
 
             var catalogClient = _httpClientFactory.CreateClient("CatalogClient");
+            var correlationId = Guid.NewGuid().ToString("N");
             foreach (var giftId in user.ShoppingCart.ToList())
             {
-                var correlationId = Guid.NewGuid().ToString("N");
                 var sagaId = $"purchase-{userId}-{giftId}";
 
                 // 1. Validate gift from ProductCatalogService

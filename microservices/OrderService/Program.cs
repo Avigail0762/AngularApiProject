@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OrderService.Data;
@@ -7,9 +8,14 @@ using OrderService.Repositories;
 using OrderService.Repositories.Interfaces;
 using OrderService.Services;
 using OrderService.Services.Interfaces;
+using Serilog;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 // ── Database ─────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<OrderContext>(options =>
@@ -86,6 +92,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // ── Ensure DB schema exists and seed manager user ─────────────────────────────
@@ -114,5 +122,6 @@ app.UseSwaggerUI();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health");
 app.MapControllers();
 app.Run();

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using Serilog.Context;
 
 namespace OrderService.Messaging
 {
@@ -70,17 +71,33 @@ namespace OrderService.Messaging
 
         private void Publish(string routingKey, object payload)
         {
+            var correlationId = GetCorrelationId(payload);
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(payload));
             var properties = _channel.CreateBasicProperties();
             properties.Persistent = true;
+            properties.CorrelationId = correlationId;
+            properties.Headers = new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId
+            };
 
-            _channel.BasicPublish(
-                exchange: _options.Exchange,
-                routingKey: routingKey,
-                basicProperties: properties,
-                body: body);
+            using (LogContext.PushProperty("CorrelationId", correlationId))
+            {
+                _channel.BasicPublish(
+                    exchange: _options.Exchange,
+                    routingKey: routingKey,
+                    basicProperties: properties,
+                    body: body);
 
-            _logger.LogInformation("Published event to {RoutingKey}", routingKey);
+                _logger.LogInformation("Published event to {RoutingKey}", routingKey);
+            }
+        }
+
+        private static string GetCorrelationId(object payload)
+        {
+            var property = payload.GetType().GetProperty("CorrelationId");
+            var value = property?.GetValue(payload) as string;
+            return string.IsNullOrWhiteSpace(value) ? Guid.NewGuid().ToString("N") : value;
         }
 
         public void Dispose()

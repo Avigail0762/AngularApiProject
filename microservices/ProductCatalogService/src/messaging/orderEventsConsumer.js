@@ -1,6 +1,7 @@
 const amqp = require('amqplib');
 const giftService = require('../services/giftService');
 const ProcessedEvent = require('../models/ProcessedEvent');
+const { logger, withCorrelationId } = require('../logger');
 
 const EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'order.events';
 const RESERVED_QUEUE = process.env.RABBITMQ_CATALOG_RESERVED_QUEUE || 'product-catalog.inventory-reserved';
@@ -19,7 +20,11 @@ function getAmqpUrl() {
 async function ensureNotProcessed(eventId, payload, eventType) {
   const existing = await ProcessedEvent.findOne({ eventId }).lean();
   if (existing) {
-    console.log(`DUPLICATE_EVENT eventType=${eventType} eventId=${eventId} giftId=${payload.giftId}`);
+    withCorrelationId(payload.correlationId).info('Duplicate event skipped', {
+      eventType,
+      eventId,
+      giftId: payload.giftId
+    });
     return false;
   }
 
@@ -47,8 +52,11 @@ async function startOrderEventsConsumer() {
 
   channel.consume(RESERVED_QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
       const shouldProcess = await ensureNotProcessed(payload.eventId, payload, 'inventory-reserved');
       if (!shouldProcess) {
         channel.ack(msg);
@@ -56,17 +64,21 @@ async function startOrderEventsConsumer() {
       }
 
       await giftService.incrementBuyers(Number(payload.giftId));
+      messageLogger.info('Processed inventory-reserved event', { giftId: payload.giftId, ticketId: payload.ticketId });
       channel.ack(msg);
     } catch (err) {
-      console.error('Catalog consumer inventory-reserved error:', err.message);
+      messageLogger.error('Catalog consumer inventory-reserved error', { error: err });
       channel.nack(msg, false, true);
     }
   });
 
   channel.consume(FAIL_QUEUE, async msg => {
     if (!msg) return;
+    const correlationId = extractCorrelationId(msg);
+    const messageLogger = withCorrelationId(correlationId);
     try {
       const payload = JSON.parse(msg.content.toString());
+      payload.correlationId = correlationId;
       const shouldProcess = await ensureNotProcessed(payload.eventId, payload, 'purchase-failed');
       if (!shouldProcess) {
         channel.ack(msg);
@@ -74,15 +86,33 @@ async function startOrderEventsConsumer() {
       }
 
       await giftService.decrementBuyers(Number(payload.giftId));
+      messageLogger.info('Processed purchase-failed event', { giftId: payload.giftId, ticketId: payload.ticketId });
       channel.ack(msg);
     } catch (err) {
-      console.error('Catalog consumer purchase-failed error:', err.message);
+      messageLogger.error('Catalog consumer purchase-failed error', { error: err });
       channel.nack(msg, false, true);
     }
   });
 
-  console.log('ProductCatalogService RabbitMQ consumers started');
+  logger.info('ProductCatalogService RabbitMQ consumers started');
   return { connection, channel };
+}
+
+function extractCorrelationId(msg) {
+  const headerValue = msg.properties?.headers?.CorrelationId;
+  if (msg.properties?.correlationId) {
+    return msg.properties.correlationId;
+  }
+
+  if (Buffer.isBuffer(headerValue)) {
+    return headerValue.toString('utf8');
+  }
+
+  if (typeof headerValue === 'string' && headerValue.trim()) {
+    return headerValue;
+  }
+
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
 module.exports = { startOrderEventsConsumer };
