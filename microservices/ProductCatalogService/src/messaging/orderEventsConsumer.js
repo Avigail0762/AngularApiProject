@@ -57,6 +57,16 @@ async function startOrderEventsConsumer() {
     try {
       const payload = JSON.parse(msg.content.toString());
       payload.correlationId = correlationId;
+      const validationError = validateInventoryEventPayload(payload);
+      if (validationError) {
+        messageLogger.error('Catalog consumer inventory-reserved payload invalid', {
+          error: validationError,
+          payload
+        });
+        channel.ack(msg);
+        return;
+      }
+
       const shouldProcess = await ensureNotProcessed(payload.eventId, payload, 'inventory-reserved');
       if (!shouldProcess) {
         channel.ack(msg);
@@ -79,6 +89,16 @@ async function startOrderEventsConsumer() {
     try {
       const payload = JSON.parse(msg.content.toString());
       payload.correlationId = correlationId;
+      const validationError = validateInventoryEventPayload(payload);
+      if (validationError) {
+        messageLogger.error('Catalog consumer purchase-failed payload invalid', {
+          error: validationError,
+          payload
+        });
+        channel.ack(msg);
+        return;
+      }
+
       const shouldProcess = await ensureNotProcessed(payload.eventId, payload, 'purchase-failed');
       if (!shouldProcess) {
         channel.ack(msg);
@@ -113,6 +133,26 @@ function extractCorrelationId(msg) {
   }
 
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function validateInventoryEventPayload(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return 'Payload must be an object';
+  }
+
+  if (!payload.eventId) {
+    return 'eventId is required';
+  }
+
+  if (!payload.sagaId) {
+    return 'sagaId is required';
+  }
+
+  if (payload.giftId === undefined || payload.giftId === null || payload.giftId === '') {
+    return 'giftId is required';
+  }
+
+  return null;
 }
 
 module.exports = { startOrderEventsConsumer };
