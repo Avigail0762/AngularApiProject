@@ -102,6 +102,69 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<OrderContext>();
     db.Database.EnsureCreated();
 
+    // Upgrade legacy DBs created before saga fields were added to Ticket.
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'CorrelationId') IS NULL
+    ALTER TABLE Tickets ADD CorrelationId nvarchar(64) NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
+    UPDATE Tickets
+    SET CorrelationId = REPLACE(CONVERT(varchar(36), NEWID()), '-', '')
+    WHERE CorrelationId IS NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
+    ALTER TABLE Tickets ALTER COLUMN CorrelationId nvarchar(64) NOT NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'SagaId') IS NULL
+    ALTER TABLE Tickets ADD SagaId nvarchar(128) NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'SagaId') IS NOT NULL
+    UPDATE Tickets
+    SET SagaId = CONCAT('legacy-', CAST(Id AS varchar(20)))
+    WHERE SagaId IS NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'SagaId') IS NOT NULL
+    ALTER TABLE Tickets ALTER COLUMN SagaId nvarchar(128) NOT NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'OrderStatus') IS NULL
+    ALTER TABLE Tickets ADD OrderStatus nvarchar(32) NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'OrderStatus') IS NOT NULL
+    UPDATE Tickets
+    SET OrderStatus = 'Completed'
+    WHERE OrderStatus IS NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'OrderStatus') IS NOT NULL
+    ALTER TABLE Tickets ALTER COLUMN OrderStatus nvarchar(32) NOT NULL;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
+   AND NOT EXISTS (
+      SELECT 1
+      FROM sys.indexes
+      WHERE name = 'IX_Tickets_CorrelationId'
+        AND object_id = OBJECT_ID('Tickets')
+   )
+    CREATE UNIQUE INDEX IX_Tickets_CorrelationId ON Tickets (CorrelationId);
+");
+
     if (!db.Users.Any())
     {
         db.Users.Add(new OrderService.Models.User

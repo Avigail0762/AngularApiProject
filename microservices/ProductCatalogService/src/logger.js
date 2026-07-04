@@ -1,5 +1,11 @@
 const winston = require('winston');
-const { SeqTransport } = require('@datalust/winston-seq');
+
+let SeqTransport;
+try {
+  ({ SeqTransport } = require('@datalust/winston-seq'));
+} catch (error) {
+  console.warn('Seq transport disabled: incompatible module format or missing package', error.message);
+}
 
 const transports = [
   new winston.transports.Console({
@@ -7,7 +13,7 @@ const transports = [
   })
 ];
 
-if (process.env.SEQ_URL) {
+if (process.env.SEQ_URL && SeqTransport) {
   transports.push(new SeqTransport({
     serverUrl: process.env.SEQ_URL,
     onError: error => console.error('Seq transport error', error)
