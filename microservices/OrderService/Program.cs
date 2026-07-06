@@ -117,6 +117,17 @@ IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
 
     db.Database.ExecuteSqlRaw(@"
 IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
+   AND EXISTS (
+      SELECT 1
+      FROM sys.indexes
+      WHERE name = 'IX_Tickets_CorrelationId'
+        AND object_id = OBJECT_ID('Tickets')
+   )
+    DROP INDEX IX_Tickets_CorrelationId ON Tickets;
+");
+
+    db.Database.ExecuteSqlRaw(@"
+IF COL_LENGTH('Tickets', 'CorrelationId') IS NOT NULL
     ALTER TABLE Tickets ALTER COLUMN CorrelationId nvarchar(64) NOT NULL;
 ");
 
